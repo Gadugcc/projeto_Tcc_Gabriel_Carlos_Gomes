@@ -231,6 +231,62 @@ report_2020 %>%
 base %>% group_by(Region) %>% 
   summarise(média = mean(Happiness.Score))
 
+# Porem ao se fazer uma analise observando apenas os paises que participaram durante todos os anos tiveram uma queda grande, confirmada
+# graficamente
+
+  ano_2015 <- report_2015 %>% 
+              select(c(1,11,4))
+  
+  ano_2016 <- report_2016 %>% 
+              select(c(1,11,4))
+  
+  ano_2017 <- report_2017 %>% 
+              select(c(1,11,3))
+  
+  ano_2018 <- report_2018 %>% 
+              select(c(2,11,3))
+  
+  ano_2019 <- report_2019 %>%
+              select(c(2,11,3))
+  
+  ano_2020 <- report_2020 %>% 
+              select(c(1,10,6))
+  
+  ano_2021 <- report_2021 %>% 
+              select(1,10,6)
+  
+  ano_2022 <- report_2022 %>% 
+              select(c(2,13,3))
+
+
+  left <- inner_join(ano_2015,ano_2016,by = "Country")
+  left <- inner_join(left,ano_2017,by = "Country")
+  left <- inner_join(left, ano_2018,by="Country")
+  left <- inner_join(left,ano_2019,by="Country")
+  left <- inner_join(left,ano_2020,by = "Country")
+  left <- inner_join(left,ano_2021,by = "Country")
+  left <- inner_join(left,ano_2022,by = "Country")
+
+
+  paises <- left %>% select(1)
+  
+  paises_2022 <- inner_join(report_2022,paises,by = "Country")
+  paises_2022 <- paises_2022 %>% select(c(2,3,13))
+  paises <- left_join(base,paises,by= "Country")
+  paises <- paises %>% select(1,4,11)
+  paises <- rbind(paises,paises_2022)
+  
+  paises_2022 <- paises_2022 %>% 
+                        rename("Happiness.Score"=2)
+
+  c <- paises %>% group_by(Year) %>% 
+        summarise(soma = sum(Happiness.Score))
+
+ ggplotly( c %>% ggplot(aes(x=Year,y= soma))+
+        geom_line()+
+        geom_point()+theme_bw())
+  
+
 # Que pode ser confirmado graficamente
 
 base %>% 
@@ -330,7 +386,7 @@ dif_final <- dif_final %>%
 
 #  paises que fizeram uma gestão de crise
 
-dif_final %>% filter(dif>0) 
+ dif_final %>% filter(dif>0) 
 
 # Paises que tiveram uma queda
 
@@ -359,7 +415,6 @@ ggplotly(  china %>% ggplot(aes(Year,Happiness.Score)) +
              geom_point() +
              geom_line())
 
-#
 
 #Olhando para o brasil conseguimos notar uma queda brusca no indice, principlamente
 #durante o ano de pandemia, se olharmos para o ano de 2020 que leva em consideração
@@ -541,20 +596,58 @@ ggplotly( top_10 %>%
 # CLUSTERIZAÇÃO. 
 #
 ################################################################################
+  
+#Olhando para a clusterização apenas no ano de 2022
 
+paises_cluster <- read.csv("Bases-csv/2022 - Copia.csv",
+                           row.names = 1,
+                           sep = ";")
 
+#Removendo as colunas com variáveis qualitativas
 
+paises_cluster <- paises_cluster %>% select(1,2,5,6,7,8,9,10,11)
 
-#Removendo as colunas que não sera utilizada
+#Renomeando as linhas
 
-report_2022_cluster <- report_2022 %>% 
-  select(-c(RANK,Year,Region,
-            `Whisker-high`,
-            `Whisker-low`,
-            `Dystopia (1.83) + residual`))
+rownames(paises_cluster) <- paises_cluster[,1]
 
-#Mudando o nome das linhas para não ter variaveis quali
+#Removendo a primeira coluna
 
-rownames(report_2022_cluster) <- report_2022_cluster[,1]
+paises_cluster <- paises_cluster[,-1]
 
+# Padronizando as variáveis
 
+paises_cluster_padronizado<- scale(paises_cluster)
+
+# Calculando a matriz de distancia usando a distância euclidiana
+
+d <- dist(paises_cluster_padronizado, method = "euclidean")
+
+# Definindo o cluster a partir do metodo escolhido no caso single linkage
+
+hc1 <- hclust(d,method = "single")
+
+#Plotando o dendograma
+plot(hc1, cex = 0.6, hang = -1)
+
+#Devido a quantidade de países é dificil ver a quantidade de cluster necessario.
+# Olhando para o metodo de elbow, definermos 4 cluster
+
+fviz_nbclust(paises_cluster_padronizado,FUN = hcut, method = "wss") + 
+              geom_vline(xintercept = 4, linetype = 2)
+
+#Usando a interpretação para imput do método não hierarquico
+
+cluster_nh <- kmeans(paises_cluster_padronizado,centers =4)
+
+#Vizualizando os cluster
+fviz_cluster(cluster_nh,data = paises_cluster_padronizado)
+
+#Agrupando na base original
+
+paises_cluster_original <- read.csv("Bases-csv/2022 - Copia.csv",
+                                    row.names = 1,
+                                    sep = ";")
+output_nh <- data.frame(cluster_nh$cluster)
+
+paises_cluster_original$Cluster <- output_nh
