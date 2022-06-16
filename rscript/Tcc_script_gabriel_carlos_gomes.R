@@ -358,6 +358,11 @@ ggplotly(ameri_cariben %>%
 #Analise da diferença dos scores no periodo antes pandemico no caso na base de 2020
 # em comparação a 2021 e 2022
 
+
+
+  
+
+
 dif_score <- base %>%
   filter(Year==2020) %>% 
   select(c(Country,Happiness.Score)) %>%
@@ -381,7 +386,7 @@ dif_final <- inner_join(dif_score,
                         by = "Country")
 
 dif_final <- dif_final %>% 
-  mutate("dif" = Score_2022- Score_2020,
+  mutate("dif" = Score_2022 - Score_2020,
          "dif_2021_2020" = Score_2021 - Score_2020)
 
 #  paises que fizeram uma gestão de crise
