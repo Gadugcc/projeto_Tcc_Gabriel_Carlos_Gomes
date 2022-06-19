@@ -52,6 +52,9 @@ paises_cluster %>% tabyl(country) %>%
   adorn_pct_formatting() %>% 
   knitr::kable()
 
+#Omitindo as na´s.
+
+paises_cluster <- na.omit(paises_cluster)
 
 #Renomeando as linhas
 paises_cluster <- 
@@ -91,7 +94,7 @@ fviz_cluster(cluster_nh, data = standardized_data)
 #Agrupando na base original
 paises_cluster <- 
   paises_cluster %>% 
-  mutate(cluster = cluster_nh[1])
+  mutate(cluster = cluster_nh$cluster)
 
 
 head(paises_cluster)
